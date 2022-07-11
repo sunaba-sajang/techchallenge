@@ -3,7 +3,8 @@ package com.example.techchallenge;
 import java.util.List;
 
 
-
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,26 +16,32 @@ public class EmployeeController {
         this.repository = repository;
     }
 
-    // Aggregate root
-    // tag::get-aggregate-root[]
     @GetMapping("/users")
-    List<Employee> all(@RequestParam(required = false) float min,
-                       @RequestParam(required = false) float max,
-                       @RequestParam(required = false) int offset,
-                       @RequestParam(required = false) int limit,
-                       @RequestParam(required = false) String sort) {
+    List<Employee> users(@RequestParam(required = false) Float min,
+                       @RequestParam(required = false) Float max,
+                       @RequestParam(required = false) Integer offset,
+                       @RequestParam(required = false) Integer limit,
+                       @RequestParam(required = false) String sort)
+    {
+        PageRequest firstPage;
+        if (min == null) min = 0.0f;
+        if (max == null || max == 0.0f) max = 4000.0f;
+        if (limit == null) limit = Integer.MAX_VALUE;
 
-        if (max == 0.0f) max = 4000.0f;
+        if (sort != null && (sort.equalsIgnoreCase("name") || sort.equalsIgnoreCase("salary"))) {
+            Sort.Order order = new Sort.Order(Sort.Direction.ASC, sort).ignoreCase();
+            firstPage = PageRequest.of(0, limit, Sort.by(order));
+        }
+        else {
+            firstPage = PageRequest.of(0, limit);
+        }
 
-        return repository.findAll();
+        return repository.findBySalaryBetween(min, max, firstPage);
     }
-    // end::get-aggregate-root[]
 
 
 
-
-
-    @PostMapping("/upload")
+    @PostMapping(path="/upload", produces = "application/json")
     Employee newEmployee(@RequestBody Employee newEmployee) {
         return repository.save(newEmployee);
     }
