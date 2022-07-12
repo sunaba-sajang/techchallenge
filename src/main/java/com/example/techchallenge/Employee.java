@@ -1,14 +1,12 @@
 package com.example.techchallenge;
 
-import java.util.Objects;
-
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import java.util.Objects;
 
 @Entity
 class Employee {
-
     private @Id @GeneratedValue Long id;
     private String name;
     private float salary;
@@ -16,7 +14,6 @@ class Employee {
     Employee() {}
 
     Employee(String name, float salary) {
-
         this.name = name;
         this.salary = salary;
     }
@@ -41,7 +38,7 @@ class Employee {
         this.name = name;
     }
 
-    public void setRole(float salary) {
+    public void setSalary(float salary) {
         this.salary = salary;
     }
 
