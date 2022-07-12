@@ -5,6 +5,9 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.exceptions.CsvException;
+import com.opencsv.exceptions.CsvValidationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
@@ -17,15 +20,15 @@ import java.util.List;
 public class CSVHelper {
 
     public static String TYPE = "text/csv";
-    static String[] HEADERs = { "NAME", "SALARY" };
+    private static final Logger log = LoggerFactory.getLogger(LoadDatabase.class);
 
-    public static boolean hasCSVFormat(MultipartFile file) {
+    public boolean hasCSVFormat(MultipartFile file) {
         if (!TYPE.equals(file.getContentType())) {
             return false;
         }
         return true;
     }
-    public static List<Employee> csvToEmployee(MultipartFile file) throws IOException {
+    public List<Employee> csvToEmployee(MultipartFile file) throws IOException, CsvValidationException {
         List<Employee> employees = new ArrayList<Employee>();
         InputStream is = file.getInputStream();
         CSVParser parser = new CSVParserBuilder()
@@ -40,48 +43,28 @@ public class CSVHelper {
 
             try (CSVReader csvReader = csvReaderBuilder.build()) {
                 String[] nextLine;
+                Float salary = 0.0f;
                 while ((nextLine = csvReader.readNext()) != null) {
-                    Float salary = Float.parseFloat(nextLine[1]);
+                    try {
+                        salary = Float.parseFloat(nextLine[1]);
+                    }catch (NumberFormatException e){
+                        log.warn("File rejected because unable to parse salary for : " + nextLine[0]);
+                        throw e;
+                    }
+
                     if (salary >= 0.0f) {
                         Employee e = new Employee(nextLine[0], salary);
+                        log.info("Extracted: " + e);
                         employees.add(e);
-                    }
+                    }else log.info("Skipped: " + nextLine[0] + " due to negative salary");
                 }
                 return employees;
             } catch (CsvException e) {
                 e.printStackTrace();
+                throw e;
             }
 
-            return employees;
         }
-
-        /*try (BufferedReader fileReader = new BufferedReader(new InputStreamReader(is, "UTF-8")))
-        {
-             CsvToBean<Employee> csvReaderBuilder = new CsvToBeanBuilder(fileReader)
-                     .withType(Employee.class)
-                     .withIgnoreLeadingWhiteSpace(true)
-                     .withSkipLines(1)
-                     .build();
-
-            List<Employee> result = csvReaderBuilder.parse();
-
-*//*             CSVReader csvReader = new CSVReader(reader);
-             CSVParser csvParser = new CSVParser(fileReader,
-                     CSVFormat.DEFAULT.withFirstRecordAsHeader().withIgnoreHeaderCase().withTrim());) {
-            List<Employee> tutorials = new ArrayList<Employee>();
-            Iterable<CSVRecord> csvRecords = csvParser.getRecords();
-            for (CSVRecord csvRecord : csvRecords) {
-                Employee tutorial = new Employee(
-                        csvRecord.get("NAME"),
-                        Float.parseFloat(csvRecord.get("SALARY"))
-                );
-                tutorials.add(tutorial);
-            }*//*
-            return result;
-        } catch (IOException e) {
-            throw new RuntimeException("Fail to parse CSV file: " + e.getMessage());
-        }*/
-        //return null;
     }
 
 

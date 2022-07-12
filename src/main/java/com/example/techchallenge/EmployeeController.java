@@ -1,5 +1,6 @@
 package com.example.techchallenge;
 
+import com.opencsv.exceptions.CsvValidationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -23,7 +24,7 @@ public class EmployeeController {
 
     @GetMapping(path="/users", produces = "application/json")
     @ResponseBody
-    Map users(@RequestParam(required = false) Float min,
+    ResponseEntity<Map> users(@RequestParam(required = false) Float min,
               @RequestParam(required = false) Float max,
               @RequestParam(required = false) Integer offset,
               @RequestParam(required = false) Integer limit,
@@ -46,7 +47,7 @@ public class EmployeeController {
         List<Employee> employees = repository.findBySalaryBetween(min, max, firstPage);
         Map result = new HashMap();
         result.put("results", employees);
-        return result;
+        return new ResponseEntity<Map>(result, HttpStatus.OK);
     }
 
 
@@ -54,18 +55,41 @@ public class EmployeeController {
     @PostMapping(path="/upload", produces = "application/json")
     @ResponseBody
     ResponseEntity<Map> upload(@RequestParam("file") MultipartFile file) throws IOException {
-        String TYPE = "text/csv";
         List<Employee> resultList;
+        ResponseEntity<Map> response;
+        CSVHelper helper = new CSVHelper();
 
         Map result = new HashMap();
-        if (file.isEmpty() || !TYPE.equals(file.getContentType())) {
+        if (file.isEmpty() || !helper.hasCSVFormat(file)) {
             result.put("fail", "0");
-            return new ResponseEntity<Map>(result, HttpStatus.BAD_REQUEST);
+            response = createBadRequest("File is not in the correct format");
         } else {
-            CSVHelper helper = new CSVHelper();
-            resultList = helper.csvToEmployee(file);
-            result.put("success", "1");
+            try{
+                resultList = helper.csvToEmployee(file);
+                for (Employee temp : resultList) {
+                    if (repository.existsByName(temp.getName())) {
+                        Employee updateE = repository.findByName(temp.getName());
+                        updateE.setSalary(temp.getSalary());
+                        repository.save(updateE);
+                    }
+                    else
+                        repository.save(temp);
+                }
+                result.put("success", "1");
+                response = new ResponseEntity<Map>(result, HttpStatus.OK);
+            }catch (IOException |CsvValidationException |NumberFormatException e){
+                response = createBadRequest(e.getMessage());
+            }
         }
-        return new ResponseEntity<Map>(result, HttpStatus.OK);
+        return response;
+    }
+
+    private ResponseEntity<Map> createBadRequest(String errorMessage)
+    {
+        Map result = new HashMap();
+        result.put("fail", "0");
+        result.put("error", errorMessage);
+
+        return new ResponseEntity<Map>(result, HttpStatus.BAD_REQUEST);
     }
 }
