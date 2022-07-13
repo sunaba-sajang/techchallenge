@@ -1,4 +1,3 @@
-// Extracted from https://blog.felix-seifert.com/limit-and-offset-spring-data-jpa-repositories/
 package com.example.techchallenge;
 
 import org.slf4j.Logger;
@@ -6,7 +5,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
-
+/**
+ * Custom pageable implementation to cater for offset and limit
+ * Extracted from https://blog.felix-seifert.com/limit-and-offset-spring-data-jpa-repositories/
+ */
 public class OffsetBasedPageRequest implements Pageable {
     private int limit;
     private int offset;
