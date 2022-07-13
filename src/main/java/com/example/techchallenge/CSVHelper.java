@@ -20,7 +20,7 @@ import java.util.List;
 public class CSVHelper {
 
     public static String TYPE = "text/csv";
-    private static final Logger log = LoggerFactory.getLogger(LoadDatabase.class);
+    private static final Logger log = LoggerFactory.getLogger(CSVHelper.class);
 
     public boolean hasCSVFormat(MultipartFile file) {
         if (!TYPE.equals(file.getContentType())) {
@@ -42,6 +42,8 @@ public class CSVHelper {
                     .withCSVParser(parser);
 
             try (CSVReader csvReader = csvReaderBuilder.build()) {
+                if (csvReader.peek().length > 2)
+                    throw new IOException("Incorrect number of columns");
                 String[] nextLine;
                 Float salary = 0.0f;
                 while ((nextLine = csvReader.readNext()) != null) {
