@@ -16,10 +16,5 @@ pipeline {
                 bat 'mvn package'
             }
         }
-        stage('Maven Deploy') {
-            steps {
-                echo 'deploying jar file to server'
-            }
-        }
     }
 }
